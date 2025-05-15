@@ -187,7 +187,7 @@ module.exports.page = async (req, res) => {
                     {
                       multi_match: {
                         query: searchTerm,
-                        fields: ['title^3', 'brand'],
+                        fields: ['title^3', 'brand', 'brand.keyword'],
                         fuzziness: 'AUTO'
                       }
                     }
