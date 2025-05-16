@@ -9,6 +9,7 @@ module.exports.index = async (req, res) => {
     try {
         let bestSellingIds = [];
         const status = req.params.status ?? "";
+        let sort = {};
         let find = {
             stock: { $gt: 0 }
         };
@@ -19,10 +20,11 @@ module.exports.index = async (req, res) => {
         else if(status == "Promotional Products") {
             find.deleted = false;
             find.discountPercentage = { $gt: 0.0 };
+            sort.discountPercentage = -1;
         }
         else if(status == "New Products") {
             find.deleted = false;
-            find.featured = true;
+            sort.createdAt = -1;
         }
         else if(status == "Best Sellers") {
             find.deleted = false;
@@ -41,14 +43,16 @@ module.exports.index = async (req, res) => {
             if (bestSellingIds.length === 0) {
                 return res.status(200).json({ products: [] });
             }
+            sort.createdAt = 1;
             find._id = { $in: bestSellingIds };
         }
         else {
             find.deleted = false;
             find.category = status;
+            sort.createdAt = 1;
         }
     
-        const products  = await Product.find(find).limit(8);
+        const products  = await Product.find(find).sort(sort).limit(8);
 
         const productsWithRatings = await Promise.all(products.map(async (product) => {
             const ratings = await Rating.find({ productId: product.id });
@@ -111,14 +115,30 @@ module.exports.page = async (req, res) => {
         else if(status == "Promotional Products") {
             find.deleted = false;
             find.discountPercentage = { $gt: 0.0 };
+            sort.discountPercentage = -1;
         }
         else if(status == "New Products") {
             find.deleted = false;
-            find.featured = true;
+            sort.createdAt = -1;
         }
         else if(status == "Best Sellers") {
             find.deleted = false;
-            find.bestSellers = true;
+            const bestSelling = await Order.aggregate([
+                { $unwind: "$products" },
+                {
+                  $group: {
+                    _id: "$products.product_id",
+                    totalQuantitySold: { $sum: "$products.quantity" }
+                  }
+                },
+                { $sort: { totalQuantitySold: -1 } }
+              ]);
+
+            bestSellingIds = bestSelling.map(p => new mongoose.Types.ObjectId(p._id));
+            if (bestSellingIds.length === 0) {
+                return res.status(200).json({ products: [] });
+            }
+            find._id = { $in: bestSellingIds };
         }
         else {
             find.deleted = false;
@@ -176,7 +196,7 @@ module.exports.page = async (req, res) => {
             }
         }
 
-        //Elastic Search
+        // Elastic Search
         if (req.query.search) {
             const searchTerm = req.query.search;
             const { hits } = await client.search({
@@ -206,6 +226,20 @@ module.exports.page = async (req, res) => {
 
             find._id = { $in: ids };
         }
+
+        // if (req.query.search) {
+        //     const searchTerm = req.query.search.trim();
+        //     const regex = new RegExp(searchTerm, 'i'); 
+            
+        //     const matchedProducts = await Product.find({ title: regex }, { _id: 1 });
+
+        //     if (matchedProducts.length === 0) {
+        //         return res.status(404).json({ error: "Không tìm thấy kết quả phù hợp!" });
+        //     }
+
+        //     const matchedIds = matchedProducts.map(p => p._id);
+        //     find._id = { $in: matchedIds };
+        // }
 
         if (useAggregation) {
             const pipeline = [
