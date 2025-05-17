@@ -197,49 +197,49 @@ module.exports.page = async (req, res) => {
         }
 
         // Elastic Search
-        if (req.query.search) {
-            const searchTerm = req.query.search;
-            const { hits } = await client.search({
-              index: 'products',
-              query: {
-                bool: {
-                  must: [
-                    {
-                      multi_match: {
-                        query: searchTerm,
-                        fields: ['title^3', 'brand', 'brand.keyword'],
-                        fuzziness: 'AUTO'
-                      }
-                    }
-                  ],
-                  filter: []
-                }
-              }
-            });
-
-            // ids = hits.hits.map(hit => hit._id);
-            ids = hits.hits.map(hit => new mongoose.Types.ObjectId(hit._id));
-
-            if (ids.length === 0) {
-                return res.status(404).json({ error: "Không tìm thấy kết quả phù hợp!" });
-            }
-
-            find._id = { $in: ids };
-        }
-
         // if (req.query.search) {
-        //     const searchTerm = req.query.search.trim();
-        //     const regex = new RegExp(searchTerm, 'i'); 
-            
-        //     const matchedProducts = await Product.find({ title: regex }, { _id: 1 });
+        //     const searchTerm = req.query.search;
+        //     const { hits } = await client.search({
+        //       index: 'products',
+        //       query: {
+        //         bool: {
+        //           must: [
+        //             {
+        //               multi_match: {
+        //                 query: searchTerm,
+        //                 fields: ['title^3', 'brand', 'brand.keyword'],
+        //                 fuzziness: 'AUTO'
+        //               }
+        //             }
+        //           ],
+        //           filter: []
+        //         }
+        //       }
+        //     });
 
-        //     if (matchedProducts.length === 0) {
+        //     // ids = hits.hits.map(hit => hit._id);
+        //     ids = hits.hits.map(hit => new mongoose.Types.ObjectId(hit._id));
+
+        //     if (ids.length === 0) {
         //         return res.status(404).json({ error: "Không tìm thấy kết quả phù hợp!" });
         //     }
 
-        //     const matchedIds = matchedProducts.map(p => p._id);
-        //     find._id = { $in: matchedIds };
+        //     find._id = { $in: ids };
         // }
+
+        if (req.query.search) {
+            const searchTerm = req.query.search.trim();
+            const regex = new RegExp(searchTerm, 'i'); 
+            
+            const matchedProducts = await Product.find({ title: regex }, { _id: 1 });
+
+            if (matchedProducts.length === 0) {
+                return res.status(404).json({ error: "Không tìm thấy kết quả phù hợp!" });
+            }
+
+            const matchedIds = matchedProducts.map(p => p._id);
+            find._id = { $in: matchedIds };
+        }
 
         if (useAggregation) {
             const pipeline = [

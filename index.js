@@ -37,30 +37,30 @@ app.use(cookieParser("JHGJKLKLGFLJK"));
 app.locals.prefixAdmin = systemConfig.prefixAdmin;
 app.locals.moment = moment;
 
-const checkElasticReady = async () => {
-  const elasticClient = require('./config/elasticsearch');
-  let connected = false;
-  for (let i = 0; i < 10; i++) {
-    try {
-      const health = await elasticClient.cluster.health({});
-      console.log("Elasticsearch is ready:", health.status);
-      connected = true;
-      break;
-    } catch (e) {
-      console.log(`Waiting for Elasticsearch... (${i + 1}/10)`);
-      await new Promise(resolve => setTimeout(resolve, 3000)); // wait 3s
-    }
-  }
-  if (!connected) {
-    console.error("Failed to connect to Elasticsearch");
-    process.exit(1);
-  }
-};
+// const checkElasticReady = async () => {
+//   const elasticClient = require('./config/elasticsearch');
+//   let connected = false;
+//   for (let i = 0; i < 10; i++) {
+//     try {
+//       const health = await elasticClient.cluster.health({});
+//       console.log("Elasticsearch is ready:", health.status);
+//       connected = true;
+//       break;
+//     } catch (e) {
+//       console.log(`Waiting for Elasticsearch... (${i + 1}/10)`);
+//       await new Promise(resolve => setTimeout(resolve, 3000)); // wait 3s
+//     }
+//   }
+//   if (!connected) {
+//     console.error("Failed to connect to Elasticsearch");
+//     process.exit(1);
+//   }
+// };
 
-(async () => {
-  await checkElasticReady();
-  indexProductsToElastic();
-})();
+// (async () => {
+//   await checkElasticReady();
+//   indexProductsToElastic();
+// })();
 
 routeAdmin(app);
 route(app);
